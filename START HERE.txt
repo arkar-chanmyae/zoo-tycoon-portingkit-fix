@@ -44,10 +44,15 @@ The script will then:
        /Applications/Zoo Tycoon - Complete Collection
   4. Clear the quarantine attributes (xattr -cr) - this is what fixes
      "Zoo Tycoon is damaged and cannot be opened"
-  5. Ask you one question about the disc check (see the note below)
-  6. Create a "Play Zoo Tycoon.command" on your Desktop
+  5. Set the game window to 1280x832, windowed (see the note below)
+  6. Ask you one question about the disc check (see the note below)
+  7. Create a "Play Zoo Tycoon.command" on your Desktop - and, if you
+     chose the Custom Patch or the No-CD patch, a direct "Zoo Tycoon"
+     shortcut as well
 
-After it finishes, double-click "Play Zoo Tycoon.command".
+After it finishes you can play straight away. If you chose option A or B,
+just double-click "Zoo Tycoon" on your Desktop - no disc, no Terminal
+window, nothing else to run.
 
 
 NOTE - the disc check question (this is the important bit):
@@ -176,7 +181,7 @@ METHOD B (Porting Kit port - 4 bugs fixed):
      load its own libinotify or the libMoltenVK graphics backend. A cold
      start dies before the game starts. Fixed with install_name_tool.
   3. The game demands an 800x600 fullscreen mode, which Retina displays do
-     not offer. zoo.ini is set to run windowed at 1024x768 instead.
+     not offer. zoo.ini is set to run windowed at 1280x832 instead.
   4. A leftover "gdi" DirectDraw renderer setting blocks the Direct3D the
      game needs, so it is removed.
 

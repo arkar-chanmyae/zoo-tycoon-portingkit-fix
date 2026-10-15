@@ -61,7 +61,7 @@ We do **not** redistribute the patch: the `ijl15_org.dll` inside it is a copy of
 |---|-----|---------|-------------|
 | 1 | **cnc-ddraw COM trap** | `err:ole:apartment_add_dll couldn't find function DllGetClassObject in L"ddraw.dll"` | Replace with Wine's builtin `ddraw.dll` + registry override `*ddraw=builtin` |
 | 2 | **Missing LC_RPATH** | `Library not loaded: @rpath/libinotify.0.dylib` / `Failed to load libMoltenVK.dylib` | `install_name_tool -add_rpath @executable_path/../../../Frameworks/moltenvkcx` on engine binaries |
-| 3 | **800×600 fullscreen demand** | `err:display:macdrv_ChangeDisplaySettingsEx No matching mode found 800x600x32 @0!` | Rewrite `zoo.ini` → windowed 1024×768, **preserving `[mgr]` and `[language]`** |
+| 3 | **800×600 fullscreen demand** | `err:display:macdrv_ChangeDisplaySettingsEx No matching mode found 800x600x32 @0!` | Rewrite `zoo.ini` → windowed **1280×832**, **preserving `[mgr]` and `[language]`** |
 | 4 | **Stale `gdi` renderer** | Direct3D terrain/water never renders | Remove `renderer=gdi` from `user.reg` (file edit, no Wine session) |
 
 **Also included:** auto-mounts the required `ZOO_TYCN.iso` disc image.

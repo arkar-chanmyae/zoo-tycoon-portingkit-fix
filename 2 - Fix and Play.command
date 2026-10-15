@@ -259,12 +259,14 @@ else
       [ "$CHECK_ONLY" = 1 ] && { todo "would create zoo.ini in $LBL"; continue; }
       printf '[UI]\r\nTooltipDelay=1\r\nTooltipDuration=3000\r\n' > "$ini"
     fi
-    if grep -qi '^screenwidth=' "$ini" 2>/dev/null && grep -qi '^fullscreen=0' "$ini" 2>/dev/null; then
-      ok "already windowed: $LBL/zoo.ini"
+    if grep -qi '^screenwidth=1280' "$ini" 2>/dev/null && \
+       grep -qi '^screenheight=832' "$ini" 2>/dev/null && \
+       grep -qi '^fullscreen=0' "$ini" 2>/dev/null; then
+      ok "already windowed 1280x832: $LBL/zoo.ini"
       continue
     fi
     if [ "$CHECK_ONLY" = 1 ]; then
-      todo "would set windowed 1024x768 in $LBL/zoo.ini"
+      todo "would set windowed 1280x832 in $LBL/zoo.ini"
       continue
     fi
     if ! command -v perl >/dev/null 2>&1; then
@@ -278,10 +280,10 @@ else
       $s =~ s/\r\n/\n/g;
       $s =~ s/^\[user\]\n(?:[^\[].*\n)*//mg;      # drop an existing [user] block
       $s =~ s/\n+\z/\n/;
-      $s .= "[user]\nfullscreen=0\nscreenwidth=1024\nscreenheight=768\n";
+      $s .= "[user]\nfullscreen=0\nscreenwidth=1280\nscreenheight=832\n";
       $s =~ s/\n/\r\n/g;
       open(my $o,">",$f) or exit 1; print $o $s; close $o;
-    ' "$ini" && did "set windowed 1024x768 in $LBL/zoo.ini (backup .bak)"
+    ' "$ini" && did "set windowed 1280x832 in $LBL/zoo.ini (backup .bak)"
     # guard against the infinite-loop fault
     if ! grep -qi '^\[language\]' "$ini" 2>/dev/null; then
       warn "  this zoo.ini has no [language] section - the game may loop;"

@@ -18,6 +18,7 @@ set -uo pipefail
 say()  { printf '\n%s\n' "$*"; }
 ok()   { printf '  [ok]    %s\n' "$*"; }
 did()  { printf '  [DONE]  %s\n' "$*"; }
+note() { printf '  [info]  %s\n' "$*"; }
 warn() { printf '  [warn]  %s\n' "$*"; }
 bad()  { printf '  [FAIL]  %s\n' "$*"; }
 hr()   { printf '%s\n' "------------------------------------------------------------------"; }
@@ -162,6 +163,39 @@ if [ -d "$GAMEDIR" ]; then
 else
   warn "game folder not where expected"
   GAMEDIR=""
+fi
+
+# ------------------------------------------------- 6b. window size ---------
+# The repack ships 800x600, which is tiny on a Retina MacBook. 1280x832 windowed
+# fills a 13.6" M2 Air (2560x1664 at 2x = 1280x832) without any fullscreen mode
+# switch - and windowed mode is also what avoids the 800x600 fullscreen failure.
+say "6b. Setting the game window"
+WIN_W=1280
+WIN_H=832
+if [ -n "$GAMEDIR" ] && [ -f "$GAMEDIR/zoo.ini" ]; then
+  cp "$GAMEDIR/zoo.ini" "$GAMEDIR/zoo.ini.bak" 2>/dev/null
+  if command -v perl >/dev/null 2>&1; then
+    perl -e '
+      my ($f,$w,$h)=@ARGV; local $/;
+      open(my $fh,"<",$f) or exit 1; my $s=<$fh>; close $fh;
+      $s =~ s/\r\n/\n/g;
+      $s =~ s/^fullscreen=.*/fullscreen=0/mg;
+      $s =~ s/^screenwidth=.*/screenwidth=$w/mg;
+      $s =~ s/^screenheight=.*/screenheight=$h/mg;
+      $s =~ s/\n/\r\n/g;
+      open(my $o,">",$f) or exit 1; print $o $s; close $o;
+    ' "$GAMEDIR/zoo.ini" "$WIN_W" "$WIN_H"
+  fi
+  if grep -qi "^screenwidth=$WIN_W" "$GAMEDIR/zoo.ini" && \
+     grep -qi "^screenheight=$WIN_H" "$GAMEDIR/zoo.ini" && \
+     grep -qi "^fullscreen=0" "$GAMEDIR/zoo.ini"; then
+    did "zoo.ini: windowed ${WIN_W}x${WIN_H}"
+  else
+    warn "could not set the window size automatically"
+    note "run \"Change Resolution.command\" in the game folder instead"
+  fi
+else
+  warn "zoo.ini not found - leaving the game's own default (800x600)"
 fi
 
 # ------------------------------------------------------- 7. disc handling --
@@ -316,8 +350,8 @@ hr
 printf '  Play:       double-click "Play Zoo Tycoon.command" on your Desktop\n'
 printf '  First run:  right-click that file -> Open -> Open (Gatekeeper)\n'
 printf '  Installed:  %s\n' "$DEST"
-printf '  Too small?  run "Change Resolution.command" in that folder\n'
-printf '              (the game starts windowed at 800x600)\n'
+printf '  Window:     %sx%s windowed (no fullscreen). To change it, run\n' "$WIN_W" "$WIN_H"
+printf '              "Change Resolution.command" in that folder.\n'
 hr
 printf '\nPress any key to close this window... '
 read -n 1 -s -r
