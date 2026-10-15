@@ -22,9 +22,12 @@ DO THIS ONCE:
 
 Double-click:   0 - Install from Mac Version.command
 
-If macOS says it "cannot be opened because the developer cannot be
-verified", right-click the file and choose "Open", then click "Open"
-again. You only need to do that once per file.
+IF macOS blocks it with a box saying it "cannot be opened because the
+developer cannot be verified": right-click the file, choose "Open", then
+click "Open" in the box that follows. That is a one-time approval, per
+file. If it just opens normally, there is nothing to right-click - skip
+this. The same applies the first time you double-click any .command file
+in this kit.
 
 You need the Mac version archive first. This is the one manual download:
 
@@ -117,10 +120,21 @@ Use this ONLY if Method A fails for some reason.
  PLAYING IT AGAIN LATER
 ------------------------------------------------------------------------
 
-METHOD A: Always use "Play Zoo Tycoon.command" on your Desktop.
+You do NOT have to run the installer or the .command files every time.
 
-METHOD B: Always use "2 - Fix and Play.command" from this folder.
-          It mounts the disc and starts the game.
+If you chose option A (Custom Patch) or B (No-CD patch), the game needs
+no disc at all - just open it, any of these ways:
+
+  - double-click "Zoo Tycoon" on your Desktop (direct shortcut)
+  - open the "Zoo Tycoon - Complete Collection" folder in Applications
+    and double-click "Zoo Tycoon"
+
+"Play Zoo Tycoon.command" also works, but it is only really needed if you
+chose option C (original files) - there it mounts the fake disc image the
+original game expects, so use it each time.
+
+METHOD B: use "2 - Fix and Play.command" from this folder each time. It
+mounts the disc and starts the game.
 
 
 ------------------------------------------------------------------------

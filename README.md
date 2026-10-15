@@ -95,9 +95,11 @@ Any game ISO, the Porting Kit `.dmg`, any `zoo.exe` binary (original or cracked)
    `Zoo-Tycoon-Complete-Collection_Mac_EN_Repack.zip` (1.2 GB) — the installer cannot fetch this itself, the site blocks scripted downloads.
 3. **Recommended:** download the 140 KB LuKeStorm Custom Patch and save it as `ZooTycoonCC_CustomPatch.zip` (Downloads or the kit folder). This is what gives you *both* no CD prompt *and* working staff. Without it the installer falls back to the No-CD crack, which breaks zookeeper/maintenance behaviour.
 4. Ensure `Zoo-Tycoon-Complete-Collection_NoCD_Win_EN.zip` is in the kit folder (included, used only as the fallback).
-5. Double-click **`0 - Install from Mac Version.command`**. First run: Right-click → **Open** → **Open** (Gatekeeper).
+5. Double-click **`0 - Install from Mac Version.command`**. *Only if macOS blocks it* with the "developer cannot be verified" box: right-click the file → **Open** → **Open**. That approval is one-time per file; if it opens normally there is nothing to right-click.
 6. Answer the one question about the disc check — press Return for the default.
-7. Double-click **`Play Zoo Tycoon.command`** on your Desktop.
+7. Play: double-click **`Zoo Tycoon`** on your Desktop (created by the installer when you pick option A or B).
+
+> **You do not re-run anything to play again.** With option A or B the game needs no disc — just open **`Zoo Tycoon`** on the Desktop, or the game in `Applications`. `Play Zoo Tycoon.command` only matters for option C (original files), where it mounts the fake image the unpatched game expects.
 
 Requires ~3 GB free disk space (the game is 1.6 GB).
 

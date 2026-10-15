@@ -300,6 +300,15 @@ LAUNCHEOF
 chmod +x "$LAUNCHER"
 ok "created: ~/Desktop/Play Zoo Tycoon.command"
 
+# Once either patch is in place the game needs no disc image at all, so a plain
+# shortcut can launch it directly - no Terminal window, no image mounting.
+if [ "$choice" = "A" ] || [ "$choice" = "B" ]; then
+  rm -f "$HOME/Desktop/Zoo Tycoon" 2>/dev/null
+  if ln -s "$WRAPPER" "$HOME/Desktop/Zoo Tycoon" 2>/dev/null; then
+    ok "created a direct shortcut: ~/Desktop/Zoo Tycoon (no disc, no Terminal)"
+  fi
+fi
+
 # ------------------------------------------------------------- 9. done -----
 hr
 say "INSTALLATION COMPLETE"
