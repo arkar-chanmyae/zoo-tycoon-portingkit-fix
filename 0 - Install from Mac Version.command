@@ -22,7 +22,8 @@ NOCd_ZIP="$HOME/Desktop/Zoo Tycoon Kit/Zoo-Tycoon-Complete-Collection_NoCD_Win_E
 DEST_ROOT="/Applications"
 APP_NAME="Zoo Tycoon"
 FINAL_APP="$DEST_ROOT/$APP_NAME.app"
-WORK_DIR="$TMPDIR/zoo_install_$$"
+# Use a simple, visible working folder on Desktop (easy to find/clean up)
+WORK_DIR="$HOME/Desktop/Zoo Tycoon Kit/temp_install"
 mkdir -p "$WORK_DIR"
 
 trap 'rm -rf "$WORK_DIR"' EXIT
@@ -75,7 +76,8 @@ if [ ! -f "$MAC_ZIP" ]; then
   say "  1. Open this URL in Safari: $MAC_DL_URL"
   say "  2. Click 'Download' -> Choose 'Mac' version -> Save to Downloads"
   say "  3. The file is usually named 'Zoo Tycoon Complete Collection.zip' (~1.3 GB)"
-  say "  4. When done, move it to: $MAC_ZIP"
+  say "  4. When done, move it to: $WORK_DIR/ZooTycoon_Mac.zip"
+  say "     (or just leave it in Downloads - the script will find it there)"
   say "  5. Then press ENTER here to continue..."
   read -r
   # Try common download locations
