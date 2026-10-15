@@ -255,18 +255,39 @@ else
       *)         LBL="Program Files" ;;
     esac
     ini="$d/zoo.ini"
+
+    # Window target: fullscreen at the display's own logical size. Fullscreen
+    # must match a mode the display really offers, so read it rather than
+    # guessing; fall back to 1280x832 (13.6" M2 Air default) if unreadable.
+    if [ -z "${WIN_W:-}" ]; then
+      WIN_FS=1
+      WIN_W=1280
+      WIN_H=832
+      BOUNDS=$(perl -e 'alarm 5; exec @ARGV' osascript \
+        -e 'tell application "Finder" to get bounds of window of desktop' 2>/dev/null)
+      case "$BOUNDS" in
+        *,*,*,*)
+          BW=$(printf '%s' "$BOUNDS" | awk -F', *' '{print $3}')
+          BH=$(printf '%s' "$BOUNDS" | awk -F', *' '{print $4}')
+          [ -n "$BW" ] && [ "$BW" -gt 0 ] 2>/dev/null && WIN_W=$BW
+          [ -n "$BH" ] && [ "$BH" -gt 0 ] 2>/dev/null && WIN_H=$BH
+          ;;
+      esac
+      did "target: ${WIN_W}x${WIN_H}, fullscreen"
+    fi
+
     if [ ! -f "$ini" ]; then
       [ "$CHECK_ONLY" = 1 ] && { todo "would create zoo.ini in $LBL"; continue; }
       printf '[UI]\r\nTooltipDelay=1\r\nTooltipDuration=3000\r\n' > "$ini"
     fi
-    if grep -qi '^screenwidth=1280' "$ini" 2>/dev/null && \
-       grep -qi '^screenheight=832' "$ini" 2>/dev/null && \
-       grep -qi '^fullscreen=0' "$ini" 2>/dev/null; then
-      ok "already windowed 1280x832: $LBL/zoo.ini"
+    if grep -qi '^fullscreen=1' "$ini" 2>/dev/null && \
+       grep -qi "^screenwidth=$WIN_W" "$ini" 2>/dev/null && \
+       grep -qi "^screenheight=$WIN_H" "$ini" 2>/dev/null; then
+      ok "already fullscreen ${WIN_W}x${WIN_H}: $LBL/zoo.ini"
       continue
     fi
     if [ "$CHECK_ONLY" = 1 ]; then
-      todo "would set windowed 1280x832 in $LBL/zoo.ini"
+      todo "would set fullscreen ${WIN_W}x${WIN_H} in $LBL/zoo.ini"
       continue
     fi
     if ! command -v perl >/dev/null 2>&1; then
@@ -275,15 +296,15 @@ else
     fi
     cp "$ini" "$ini.bak" 2>/dev/null
     perl -e '
-      my ($f)=@ARGV; local $/;
+      my ($f,$w,$h,$fs)=@ARGV; local $/;
       open(my $fh,"<",$f) or exit 1; my $s=<$fh>; close $fh;
       $s =~ s/\r\n/\n/g;
       $s =~ s/^\[user\]\n(?:[^\[].*\n)*//mg;      # drop an existing [user] block
       $s =~ s/\n+\z/\n/;
-      $s .= "[user]\nfullscreen=0\nscreenwidth=1280\nscreenheight=832\n";
+      $s .= "[user]\nfullscreen=$fs\nscreenwidth=$w\nscreenheight=$h\n";
       $s =~ s/\n/\r\n/g;
       open(my $o,">",$f) or exit 1; print $o $s; close $o;
-    ' "$ini" && did "set windowed 1280x832 in $LBL/zoo.ini (backup .bak)"
+    ' "$ini" "$WIN_W" "$WIN_H" "$WIN_FS" && did "set fullscreen ${WIN_W}x${WIN_H} in $LBL/zoo.ini (backup .bak)"
     # guard against the infinite-loop fault
     if ! grep -qi '^\[language\]' "$ini" 2>/dev/null; then
       warn "  this zoo.ini has no [language] section - the game may loop;"

@@ -10,7 +10,7 @@
 #  This script: extracts the dmg, copies the game folder to /Applications,
 #  clears macOS quarantine, and optionally applies the No-CD patch.
 #
-#  Run ONCE. Afterwards use "Play Zoo Tycoon.command" on your Desktop.
+#  Run ONCE. Afterwards use the "Zoo Tycoon" shortcut on your Desktop.
 # ============================================================================
 
 set -uo pipefail
@@ -166,30 +166,47 @@ else
 fi
 
 # ------------------------------------------------- 6b. window size ---------
-# The repack ships 800x600, which is tiny on a Retina MacBook. 1280x832 windowed
-# fills a 13.6" M2 Air (2560x1664 at 2x = 1280x832) without any fullscreen mode
-# switch - and windowed mode is also what avoids the 800x600 fullscreen failure.
+# Default: FULLSCREEN at the display's own logical size, so the game fills the
+# screen on whatever Mac it runs on. macOS is asked for the desktop size; if
+# that cannot be read we fall back to 1280x832 (a 13.6" M2 Air's default).
+# Fullscreen must match a mode the display actually offers, which is why we
+# read the real size instead of hard-coding one.
 say "6b. Setting the game window"
+WIN_FS=1
 WIN_W=1280
 WIN_H=832
+BOUNDS=$(perl -e 'alarm 5; exec @ARGV' osascript \
+  -e 'tell application "Finder" to get bounds of window of desktop' 2>/dev/null)
+case "$BOUNDS" in
+  *,*,*,*)
+    BW=$(printf '%s' "$BOUNDS" | awk -F', *' '{print $3}')
+    BH=$(printf '%s' "$BOUNDS" | awk -F', *' '{print $4}')
+    if [ -n "$BW" ] && [ -n "$BH" ] && [ "$BW" -gt 0 ] 2>/dev/null && [ "$BH" -gt 0 ] 2>/dev/null; then
+      WIN_W=$BW
+      WIN_H=$BH
+      did "your display reports ${WIN_W}x${WIN_H}"
+    fi
+    ;;
+esac
 if [ -n "$GAMEDIR" ] && [ -f "$GAMEDIR/zoo.ini" ]; then
   cp "$GAMEDIR/zoo.ini" "$GAMEDIR/zoo.ini.bak" 2>/dev/null
   if command -v perl >/dev/null 2>&1; then
     perl -e '
-      my ($f,$w,$h)=@ARGV; local $/;
+      my ($f,$w,$h,$fs)=@ARGV; local $/;
       open(my $fh,"<",$f) or exit 1; my $s=<$fh>; close $fh;
       $s =~ s/\r\n/\n/g;
-      $s =~ s/^fullscreen=.*/fullscreen=0/mg;
+      $s =~ s/^fullscreen=.*/fullscreen=$fs/mg;
       $s =~ s/^screenwidth=.*/screenwidth=$w/mg;
       $s =~ s/^screenheight=.*/screenheight=$h/mg;
       $s =~ s/\n/\r\n/g;
       open(my $o,">",$f) or exit 1; print $o $s; close $o;
-    ' "$GAMEDIR/zoo.ini" "$WIN_W" "$WIN_H"
+    ' "$GAMEDIR/zoo.ini" "$WIN_W" "$WIN_H" "$WIN_FS"
   fi
   if grep -qi "^screenwidth=$WIN_W" "$GAMEDIR/zoo.ini" && \
      grep -qi "^screenheight=$WIN_H" "$GAMEDIR/zoo.ini" && \
-     grep -qi "^fullscreen=0" "$GAMEDIR/zoo.ini"; then
-    did "zoo.ini: windowed ${WIN_W}x${WIN_H}"
+     grep -qi "^fullscreen=$WIN_FS" "$GAMEDIR/zoo.ini"; then
+    did "zoo.ini: ${WIN_W}x${WIN_H}, fullscreen"
+    note "if fullscreen misbehaves, set fullscreen=0 in zoo.ini (a .bak is kept)"
   else
     warn "could not set the window size automatically"
     note "run \"Change Resolution.command\" in the game folder instead"
@@ -293,65 +310,41 @@ if [ "$choice" = "C" ]; then
   ok "keeping the original game files - use this only on older macOS"
 fi
 
-# ------------------------------------------------- 8. Desktop launcher -----
-say "8. Creating the Desktop launcher"
-LAUNCHER="$HOME/Desktop/Play Zoo Tycoon.command"
-cat > "$LAUNCHER" <<'LAUNCHEOF'
-#!/bin/bash
-# Zoo Tycoon launcher - double-click to play.
-DEST="/Applications/Zoo Tycoon - Complete Collection"
-WRAPPER="$DEST/.Zoo Tycoon.app"
-HELPER="$DEST/Zoo Tycoon.app"
-
-if [ ! -d "$WRAPPER" ]; then
-  echo "Zoo Tycoon is not installed at:"
-  echo "  $DEST"
-  echo "Run '0 - Install from Mac Version.command' first."
-  echo
-  read -n 1 -s -r -p "Press any key to close..."
-  exit 1
-fi
-
-echo "Starting Zoo Tycoon... (first start can take 30 seconds)"
-
-# Use the repack's own helper: it mounts the fake MARINE image, opens the
-# wrapper, then ejects the image after 20 seconds. Works whether or not the
-# No-CD patch was applied.
-if [ -d "$HELPER" ]; then
-  open "$HELPER"
-else
-  ISO="$WRAPPER/MARINE.iso"
-  if [ -f "$ISO" ] && [ ! -d /Volumes/MARINE ]; then
-    hdiutil mount "$ISO" >/dev/null 2>&1
-  fi
-  open "$WRAPPER"
-fi
-
-echo "Done - this window closes in 5 seconds."
-sleep 5
-LAUNCHEOF
-
-chmod +x "$LAUNCHER"
-ok "created: ~/Desktop/Play Zoo Tycoon.command"
-
-# Once either patch is in place the game needs no disc image at all, so a plain
-# shortcut can launch it directly - no Terminal window, no image mounting.
+# ------------------------------------------------ 8. Desktop shortcut -----
+# No launcher script: it only ever existed to mount the repack's fake MARINE
+# image, and that image cannot satisfy the disc check on macOS 26/27 (IOKit
+# reports it as generic media, not a CD). With a patch the game needs no image
+# at all, so a plain shortcut is both simpler and sufficient.
+say "8. Creating the Desktop shortcut"
 if [ "$choice" = "A" ] || [ "$choice" = "B" ]; then
-  rm -f "$HOME/Desktop/Zoo Tycoon" 2>/dev/null
+  rm -f "$HOME/Desktop/Zoo Tycoon" "$HOME/Desktop/Play Zoo Tycoon.command" 2>/dev/null
   if ln -s "$WRAPPER" "$HOME/Desktop/Zoo Tycoon" 2>/dev/null; then
-    ok "created a direct shortcut: ~/Desktop/Zoo Tycoon (no disc, no Terminal)"
+    ok "created: ~/Desktop/Zoo Tycoon - double-click it to play"
+    note "no launcher script needed: with a patch there is no disc check"
+  else
+    warn "could not create the Desktop shortcut"
+    note "start the game from: $DEST"
   fi
+else
+  note "no Desktop shortcut for option C"
+  note "start the game from: $DEST"
+  note "expect a CD-ROM prompt on macOS 26/27 - that is the unpatched game"
 fi
 
 # ------------------------------------------------------------- 9. done -----
 hr
 say "INSTALLATION COMPLETE"
 hr
-printf '  Play:       double-click "Play Zoo Tycoon.command" on your Desktop\n'
-printf '  First run:  right-click that file -> Open -> Open (Gatekeeper)\n'
+if [ "$choice" = "A" ] || [ "$choice" = "B" ]; then
+  printf '  Play:       double-click "Zoo Tycoon" on your Desktop\n'
+  printf '              (if macOS ever blocks it: right-click -> Open -> Open)\n'
+else
+  printf '  Play:       open "Zoo Tycoon - Complete Collection" in Applications\n'
+fi
 printf '  Installed:  %s\n' "$DEST"
-printf '  Window:     %sx%s windowed (no fullscreen). To change it, run\n' "$WIN_W" "$WIN_H"
-printf '              "Change Resolution.command" in that folder.\n'
+printf '  Window:     %sx%s fullscreen, matching your display.\n' "$WIN_W" "$WIN_H"
+printf '              If that misbehaves, set fullscreen=0 in zoo.ini\n'
+printf '              (a backup is kept as zoo.ini.bak).\n'
 hr
 printf '\nPress any key to close this window... '
 read -n 1 -s -r

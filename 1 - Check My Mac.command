@@ -111,7 +111,7 @@ if [ -d "$MAW" ]; then
     ok "Desktop shortcut: \"Zoo Tycoon\" - just double-click it to play"
   fi
   if [ -e "$HOME/Desktop/Play Zoo Tycoon.command" ]; then
-    note "also have \"Play Zoo Tycoon.command\" (mounts the fake image; only needed for option C)"
+    note "an old \"Play Zoo Tycoon.command\" is on the Desktop - obsolete, safe to delete"
   fi
 else
   warn "not installed"

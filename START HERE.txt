@@ -44,11 +44,10 @@ The script will then:
        /Applications/Zoo Tycoon - Complete Collection
   4. Clear the quarantine attributes (xattr -cr) - this is what fixes
      "Zoo Tycoon is damaged and cannot be opened"
-  5. Set the game window to 1280x832, windowed (see the note below)
+  5. Set the game to run fullscreen at your display's real size
   6. Ask you one question about the disc check (see the note below)
-  7. Create a "Play Zoo Tycoon.command" on your Desktop - and, if you
-     chose the Custom Patch or the No-CD patch, a direct "Zoo Tycoon"
-     shortcut as well
+  7. Create a "Zoo Tycoon" shortcut on your Desktop (options A and B) -
+     there is no launcher script to run
 
 After it finishes you can play straight away. If you chose option A or B,
 just double-click "Zoo Tycoon" on your Desktop - no disc, no Terminal
@@ -134,9 +133,10 @@ no disc at all - just open it, any of these ways:
   - open the "Zoo Tycoon - Complete Collection" folder in Applications
     and double-click "Zoo Tycoon"
 
-"Play Zoo Tycoon.command" also works, but it is only really needed if you
-chose option C (original files) - there it mounts the fake disc image the
-original game expects, so use it each time.
+There is no launcher script any more - it existed only to mount the fake
+disc image, and that image cannot satisfy the disc check on macOS 26/27.
+Option C (original files) gets no shortcut either: that game will keep
+asking for the CD-ROM, so start it from Applications if you chose it.
 
 METHOD B: use "2 - Fix and Play.command" from this folder each time. It
 mounts the disc and starts the game.
@@ -181,7 +181,7 @@ METHOD B (Porting Kit port - 4 bugs fixed):
      load its own libinotify or the libMoltenVK graphics backend. A cold
      start dies before the game starts. Fixed with install_name_tool.
   3. The game demands an 800x600 fullscreen mode, which Retina displays do
-     not offer. zoo.ini is set to run windowed at 1280x832 instead.
+     not offer. zoo.ini is set to fullscreen at the display's real size.
   4. A leftover "gdi" DirectDraw renderer setting blocks the Direct3D the
      game needs, so it is removed.
 

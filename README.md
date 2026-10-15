@@ -61,7 +61,7 @@ We do **not** redistribute the patch: the `ijl15_org.dll` inside it is a copy of
 |---|-----|---------|-------------|
 | 1 | **cnc-ddraw COM trap** | `err:ole:apartment_add_dll couldn't find function DllGetClassObject in L"ddraw.dll"` | Replace with Wine's builtin `ddraw.dll` + registry override `*ddraw=builtin` |
 | 2 | **Missing LC_RPATH** | `Library not loaded: @rpath/libinotify.0.dylib` / `Failed to load libMoltenVK.dylib` | `install_name_tool -add_rpath @executable_path/../../../Frameworks/moltenvkcx` on engine binaries |
-| 3 | **800×600 fullscreen demand** | `err:display:macdrv_ChangeDisplaySettingsEx No matching mode found 800x600x32 @0!` | Rewrite `zoo.ini` → windowed **1280×832**, **preserving `[mgr]` and `[language]`** |
+| 3 | **800×600 fullscreen demand** | `err:display:macdrv_ChangeDisplaySettingsEx No matching mode found 800x600x32 @0!` | Rewrite `zoo.ini` → **fullscreen at the display's real logical size**, read from macOS rather than hard-coded, **preserving `[mgr]` and `[language]`** |
 | 4 | **Stale `gdi` renderer** | Direct3D terrain/water never renders | Remove `renderer=gdi` from `user.reg` (file edit, no Wine session) |
 
 **Also included:** auto-mounts the required `ZOO_TYCN.iso` disc image.
@@ -99,7 +99,7 @@ Any game ISO, the Porting Kit `.dmg`, any `zoo.exe` binary (original or cracked)
 6. Answer the one question about the disc check — press Return for the default.
 7. Play: double-click **`Zoo Tycoon`** on your Desktop (created by the installer when you pick option A or B).
 
-> **You do not re-run anything to play again.** With option A or B the game needs no disc — just open **`Zoo Tycoon`** on the Desktop, or the game in `Applications`. `Play Zoo Tycoon.command` only matters for option C (original files), where it mounts the fake image the unpatched game expects.
+> **You do not re-run anything to play again.** With option A or B the game needs no disc — just open **`Zoo Tycoon`** on the Desktop, or the game in `Applications`. There is deliberately **no launcher script**: it existed only to mount the repack's fake image, which cannot satisfy the disc check on macOS 26/27 anyway. Option C gets no shortcut — start it from `Applications` and expect a CD-ROM prompt.
 
 Requires ~3 GB free disk space (the game is 1.6 GB).
 
@@ -139,7 +139,7 @@ Use only if Method A fails.
 - Prompts for the disc-check method (A Custom Patch / B No-CD / C original), defaulting to A when the patch zip is present, else B, else C
 - **Option A**: takes `ijl15.dll` + `custompatch.ini` from the user's patch zip, restores the original `zoo.exe` first (the patch patches it in memory), backs up the stock DLL to `ijl15.dll.beforepatch`, and rebuilds `ijl15_org.dll` from that local copy rather than shipping the game's own file
 - **Option B**: snapshots to `zoo.exe.original` **only if that backup does not already exist**, so re-running can never overwrite a genuine original with a cracked exe
-- Writes `~/Desktop/Play Zoo Tycoon.command`, which prefers the repack's own helper (mounting the fake image, then ejecting it after 20 s) and falls back to mounting `MARINE.iso` directly if the helper was removed
+- Creates a `~/Desktop/Zoo Tycoon` shortcut straight to the game (options A/B only) — no launcher script, because the fake image it would mount cannot satisfy the disc check on macOS 26/27
 - Cleans its temp folder on exit via a `trap`, and detaches the image even on failure
 
 ### Method B Fix Script (`2 - Fix and Play.command`)
