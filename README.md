@@ -161,6 +161,28 @@ Use only if Method A fails.
 
 ---
 
+## Troubleshooting
+
+**"…could not be executed because you do not have appropriate access privileges"** — the file has lost its **executable bit**. This is a Unix permission problem, *not* Gatekeeper, so right-click → Open does **not** fix it.
+
+Cause: the bit does not survive some transfers — a USB stick formatted **exFAT/FAT32** (no Unix permissions), cloud sync, or copying out of a mounted disk image. The zip in this repo **does** store `-rwxr-xr-x` (verified with `unzip -Z -l`), so a correct extraction preserves it.
+
+Diagnose:
+```bash
+ls -l ~/Desktop/"Zoo Tycoon Kit"/*.command
+# -rw-r--r--  = broken (no exec bit)
+# -rwxr-xr-x  = fine, look elsewhere
+```
+
+Fix without Terminal: delete the broken folder, double-click the zip and let **Finder** extract it (Finder's Archive Utility restores the bit; some third-party unzip tools do not).
+
+Fix with Terminal:
+```bash
+chmod +x ~/Desktop/"Zoo Tycoon Kit"/*.command
+```
+
+**Gatekeeper "unidentified developer"** — different problem: right-click the `.command` → **Open** → **Open**. One-time per file.
+
 ## Forums where this fix is relevant
 
 | Forum | Thread / Page | Notes |

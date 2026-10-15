@@ -156,6 +156,25 @@ Most common issues:
 - "Please insert CD-ROM": The No-CD patch should fix this. If not,
   make sure MARINE.ISO is inside the app's Contents/Resources folder.
 - Gatekeeper blocks the .command file: Right-click -> Open -> Open.
+- "could not be executed because you do not have appropriate access
+  privileges" (or the file opens and closes instantly with no output):
+  the file has lost its executable bit, which is NOT a Gatekeeper
+  problem and right-click -> Open will not fix it. It happens when the
+  folder is copied via a USB stick formatted exFAT/FAT32 (those
+  filesystems have no permissions), through cloud sync, or out of a
+  mounted disk image.
+
+  Fix without Terminal: delete the broken folder, then double-click
+  "Zoo Tycoon Kit.zip" and let FINDER extract it (Finder restores the
+  executable bit; some third-party unzip tools do not). Run the
+  installer from that fresh copy.
+
+  Fix with Terminal:   chmod +x ~/Desktop/"Zoo Tycoon Kit"/*.command
+
+  To check which case you are in:
+      ls -l ~/Desktop/"Zoo Tycoon Kit"/*.command
+    "-rw-r--r--" = broken (no exec bit)
+    "-rwxr-xr-x" = fine, look elsewhere
 
 
 ------------------------------------------------------------------------
