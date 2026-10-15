@@ -166,23 +166,72 @@ fi
 
 # ------------------------------------------------------- 7. disc handling --
 say "7. The disc check - choose one"
-printf '  A) Apply the No-CD patch          (NEEDED on current macOS)\n'
-printf '     The game starts with no disc step at all.\n'
-printf '     Trade-off, documented by the repack author and the MyAbandonware\n'
-printf '     page: the crack also disables staff upkeep - zookeepers stop\n'
-printf '     cleaning exhibits and maintenance workers stop repairing fences.\n'
-printf '     The original is kept as zoo.exe.original, so this is reversible.\n\n'
-printf '  B) Keep the original game files\n'
-printf '     Gameplay fully intact, and the repack mounts a small fake "MARINE"\n'
-printf '     image for the disc check. BUT this is verified NOT to work on\n'
-printf '     macOS 26/27: the OS reports a mounted disk image as generic media\n'
-printf '     rather than a CD, so Wine still fails the check and the game keeps\n'
-printf '     asking for the CD-ROM. Only choose this on an older macOS.\n\n'
-printf '  Type A or B, then press Return [A]: '
-read -r choice
-choice=$(printf '%s' "${choice:-A}" | tr '[:lower:]' '[:upper:]')
+printf '  A) LuKeStorm Custom Patch    (BEST - one extra small download)\n'
+printf '     Removes the CD check AND keeps staff upkeep working. It is the\n'
+printf '     only option that gives both, and this game is exactly the version\n'
+printf '     it supports (v12.4.0.9 / 12.04.00.0009). Needs the 140 KB patch\n'
+printf '     from PCGamingWiki, saved as:\n'
+printf '        ZooTycoonCC_CustomPatch.zip\n'
+printf '     Not bundled here on purpose - it ships a copy of an original\n'
+printf '     game file, so we generate that locally instead.\n\n'
+printf '  B) No-CD patch\n'
+printf '     Starts with no disc step, but the repack author and the\n'
+printf '     MyAbandonware page warn it also disables staff upkeep: zookeepers\n'
+printf '     stop cleaning exhibits, maintenance workers stop repairing fences.\n'
+printf '     The original is kept as zoo.exe.original - fully reversible.\n\n'
+printf '  C) Keep the original game files\n'
+printf '     Gameplay intact, but the fake MARINE image shipped with the\n'
+printf '     repack cannot satisfy\n'
+printf '     the disc check on macOS 26/27, so the game keeps asking for the\n'
+printf '     CD-ROM. Only useful on an older macOS.\n\n'
 
-if [ "$choice" != "B" ]; then
+PATCH_ZIP=""
+for cand in "$HOME/Desktop/Zoo Tycoon Kit/ZooTycoonCC_CustomPatch.zip" \
+            "$HOME/Downloads/ZooTycoonCC_CustomPatch.zip"; do
+  [ -f "$cand" ] && { PATCH_ZIP="$cand"; break; }
+done
+
+DEFAULT="C"
+[ -f "$NOCD_ZIP" ]  && DEFAULT="B"
+[ -n "$PATCH_ZIP" ] && DEFAULT="A"
+printf '  Type A, B or C, then press Return [%s]: ' "$DEFAULT"
+read -r choice
+choice=$(printf '%s' "${choice:-$DEFAULT}" | tr '[:lower:]' '[:upper:]')
+
+# ----------------------------------------------------- option A ------------
+if [ "$choice" = "A" ] && [ -z "$PATCH_ZIP" ]; then
+  warn "Custom Patch zip not found - falling back to the No-CD patch"
+  choice="B"
+fi
+if [ "$choice" = "A" ] && [ -z "$GAMEDIR" ]; then
+  warn "game folder not found - keeping the original files"
+  choice="C"
+fi
+if [ "$choice" = "A" ]; then
+  TMPP="$WORK_DIR/cp"; mkdir -p "$TMPP"
+  unzip -o -q "$PATCH_ZIP" -d "$TMPP" 2>/dev/null
+  PROXY=$(find "$TMPP" -iname "ijl15.dll" 2>/dev/null | head -1)
+  INI=$(find "$TMPP" -iname "custompatch.ini" 2>/dev/null | head -1)
+  if [ -n "$PROXY" ] && [ -n "$INI" ] && [ -f "$GAMEDIR/ijl15.dll" ]; then
+    # The patch patches the ORIGINAL exe in memory - a pre-cracked exe conflicts.
+    if [ -f "$GAMEDIR/zoo.exe.original" ]; then
+      [ -f "$GAMEDIR/zoo.exe.nocd" ] || cp "$GAMEDIR/zoo.exe" "$GAMEDIR/zoo.exe.nocd" 2>/dev/null
+      cp "$GAMEDIR/zoo.exe.original" "$GAMEDIR/zoo.exe"
+      ok "restored the original zoo.exe (the patch requires it)"
+    fi
+    [ -f "$GAMEDIR/ijl15.dll.beforepatch" ] || cp "$GAMEDIR/ijl15.dll" "$GAMEDIR/ijl15.dll.beforepatch"
+    cp "$PROXY" "$GAMEDIR/ijl15.dll"
+    cp "$GAMEDIR/ijl15.dll.beforepatch" "$GAMEDIR/ijl15_org.dll"
+    cp "$INI" "$GAMEDIR/custompatch.ini"
+    did "Custom Patch installed - no CD check, staff upkeep preserved"
+    ok "removable via: delete ijl15.dll + custompatch.ini, rename ijl15_org.dll to ijl15.dll"
+  else
+    warn "patch files not recognised in the zip - keeping the original files"
+  fi
+fi
+
+# ----------------------------------------------------- option B ------------
+if [ "$choice" = "B" ]; then
   if [ ! -f "$NOCD_ZIP" ]; then
     warn "No-CD zip not found at $NOCD_ZIP - keeping the original files"
   elif [ -z "$GAMEDIR" ]; then
@@ -192,16 +241,21 @@ if [ "$choice" != "B" ]; then
     unzip -o -q "$NOCD_ZIP" -d "$TMPX" 2>/dev/null
     PATCHED=$(find "$TMPX" -iname "zoo.exe" 2>/dev/null | head -1)
     if [ -n "$PATCHED" ] && [ -f "$GAMEDIR/zoo.exe" ]; then
-      cp "$GAMEDIR/zoo.exe" "$GAMEDIR/zoo.exe.original" 2>/dev/null
+      # Only snapshot the original once - never overwrite a real backup.
+      if [ ! -f "$GAMEDIR/zoo.exe.original" ]; then
+        cp "$GAMEDIR/zoo.exe" "$GAMEDIR/zoo.exe.original" 2>/dev/null
+      fi
       cp "$PATCHED" "$GAMEDIR/zoo.exe"
       did "No-CD patch applied"
-      warn "original kept as zoo.exe.original - rename it back over zoo.exe"
-      warn "to restore normal zookeeper behaviour"
+      warn "original kept as zoo.exe.original - restore it to get staff back"
     else
       bad "could not apply the patch - keeping the original files"
     fi
   fi
-else
+fi
+
+# ----------------------------------------------------- option C ------------
+if [ "$choice" = "C" ]; then
   ok "keeping the original game files - use this only on older macOS"
 fi
 

@@ -39,7 +39,21 @@ So the No-CD patch buys a working launch at the cost of **staff upkeep**: zookee
 - keeps the original as `zoo.exe.original`, so it is one `cp` to undo
 - offers choice **B** (original files) for older macOS where the fake image still satisfies the check
 
-> **Untested lead worth trying:** a community patch by LuKeStorm (PCGamingWiki) claims to remove the CD check *and* fix the maintenance-worker behaviour, via a proxy `ijl15.dll` + `ztpatch.ini`. It targets Complete Collection v12.4.0.9 (CD2). We have **not** verified it inside this wrapper — treat it as an experiment, not a supported path.
+#### The disc check — three options, and the one that works
+
+Since the fake `MARINE` image cannot satisfy the check on macOS 26/27, a patch is required. The installer offers three paths:
+
+| Option | No CD prompt | Staff upkeep intact |
+|--------|:---:|:---:|
+| **A — LuKeStorm Custom Patch** | ✅ | ✅ |
+| B — No-CD crack | ✅ | ❌ |
+| C — original files | ❌ | ✅ |
+
+**Option A is verified working in this wrapper.** The patch (proxy `ijl15.dll` + `custompatch.ini`, ~140 KB) targets Complete Collection v12.4.0.9 — exactly what this repack's `zoo.exe` reports (`12.04.00.0009`) — and the `ijl15_org.dll` it ships md5-matches this game's stock `ijl15.dll` (`4fc074c3…`), confirming a clean base. Its ini enables `NoCD=1` and `EnableCCFixStaffWithoutRegValue=1`.
+
+It works by patching the **original exe in memory**, so the installer restores the original `zoo.exe` before applying it — a pre-cracked exe must not be left in place. Confirmed on a real machine: patch installed, **no disk image mounted at all**, game starts and runs.
+
+We do **not** redistribute the patch: the `ijl15_org.dll` inside it is a copy of one of the game's own files. The installer takes the proxy DLL and ini from a user-supplied zip and rebuilds `ijl15_org.dll` from the local stock file. Manual download (free account may be required): <https://community.pcgamingwiki.com/files/file/3251-zoo-tycoon-complete-collection-custom-patch/>
 
 ### Method B (Porting Kit 7.0.2 — 4 Independent Packaging Bugs)
 
@@ -77,12 +91,13 @@ Any game ISO, the Porting Kit `.dmg`, any `zoo.exe` binary (original or cracked)
 ### Method A — Recommended and verified (15 minutes)
 
 1. **Download this repo** (or the `Zoo Tycoon Kit/` folder) to your Mac.
-2. Manually download the Mac version from MyAbandonware and leave it in `Downloads`:
-   `Zoo-Tycoon-Complete-Collection_Mac_EN_Repack.zip` (1.2 GB) — the installer cannot fetch this for you, the site blocks scripted downloads.
-3. Ensure `Zoo-Tycoon-Complete-Collection_NoCD_Win_EN.zip` is in the kit folder (included).
-4. Double-click **`0 - Install from Mac Version.command`**. First run: Right-click → **Open** → **Open** (Gatekeeper).
-5. Answer the one question about the disc check — press Return for the default (No-CD).
-6. Double-click **`Play Zoo Tycoon.command`** on your Desktop.
+2. Download the Mac version from MyAbandonware and leave it in `Downloads`:
+   `Zoo-Tycoon-Complete-Collection_Mac_EN_Repack.zip` (1.2 GB) — the installer cannot fetch this itself, the site blocks scripted downloads.
+3. **Recommended:** download the 140 KB LuKeStorm Custom Patch and save it as `ZooTycoonCC_CustomPatch.zip` (Downloads or the kit folder). This is what gives you *both* no CD prompt *and* working staff. Without it the installer falls back to the No-CD crack, which breaks zookeeper/maintenance behaviour.
+4. Ensure `Zoo-Tycoon-Complete-Collection_NoCD_Win_EN.zip` is in the kit folder (included, used only as the fallback).
+5. Double-click **`0 - Install from Mac Version.command`**. First run: Right-click → **Open** → **Open** (Gatekeeper).
+6. Answer the one question about the disc check — press Return for the default.
+7. Double-click **`Play Zoo Tycoon.command`** on your Desktop.
 
 Requires ~3 GB free disk space (the game is 1.6 GB).
 
@@ -119,7 +134,9 @@ Use only if Method A fails.
 - Extracts only `ZT-CE.dmg` from inside it (the ZIP holds that single file), mounts it read-only at a private mountpoint
 - Finds the hidden `.Zoo Tycoon.app` on the volume and `ditto`s its **parent folder** to `/Applications/Zoo Tycoon - Complete Collection` — `ditto` because the wrapper contains symlinks (`drive_c`, `Logs`) and resource forks a plain `cp` would mangle
 - Runs `xattr -cr` plus `find -name '._*' -delete` to clear quarantine
-- Prompts for the disc-check method; on No-CD it backs up to `zoo.exe.original` first
+- Prompts for the disc-check method (A Custom Patch / B No-CD / C original), defaulting to A when the patch zip is present, else B, else C
+- **Option A**: takes `ijl15.dll` + `custompatch.ini` from the user's patch zip, restores the original `zoo.exe` first (the patch patches it in memory), backs up the stock DLL to `ijl15.dll.beforepatch`, and rebuilds `ijl15_org.dll` from that local copy rather than shipping the game's own file
+- **Option B**: snapshots to `zoo.exe.original` **only if that backup does not already exist**, so re-running can never overwrite a genuine original with a cracked exe
 - Writes `~/Desktop/Play Zoo Tycoon.command`, which prefers the repack's own helper (mounting the fake image, then ejecting it after 20 s) and falls back to mounting `MARINE.iso` directly if the helper was removed
 - Cleans its temp folder on exit via a `trap`, and detaches the image even on failure
 

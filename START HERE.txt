@@ -47,25 +47,43 @@ The script will then:
 After it finishes, double-click "Play Zoo Tycoon.command".
 
 
-NOTE - the disc check question, and why it defaults to the No-CD patch:
+NOTE - the disc check question (this is the important bit):
 
 The Mac repack expects you to keep a fake "MARINE" disc image mounted.
 On macOS 26/27 that no longer works: the OS tells Wine that a mounted
 image is a generic disk, not a CD, so the game still asks for the
-CD-ROM. We verified this on a real machine - it is not a guess.
+CD-ROM. Verified on a real machine - not a guess.
 
-So the installer offers:
+There is a community patch that removes the CD check WITHOUT damaging
+the game. Download it first (140 KB):
 
-  A (default)  Apply the No-CD patch. The game starts with no disc step.
-               Documented trade-off: the repack author and the
-               MyAbandonware page both warn that the crack also makes
-               zookeepers stop cleaning exhibits and maintenance workers
-               stop repairing fences. The original file is kept as
-               zoo.exe.original, so you can switch back at any time.
+  https://community.pcgamingwiki.com/files/file/3251-zoo-tycoon-complete-collection-custom-patch/
 
-  B            Keep the original files. Gameplay fully intact, and this
-               is the right choice on an older macOS - but on macOS
-               26/27 the game will keep asking for the CD-ROM.
+You may need to make a free account to download. Save it as:
+
+     ZooTycoonCC_CustomPatch.zip
+
+Put it in your Downloads folder or next to this kit. The installer
+offers three choices:
+
+  A (default when the patch zip is present)
+               LuKeStorm Custom Patch. No CD step AND staff upkeep keeps
+               working - the only option that gives both. This game is
+               exactly the version it supports (v12.4.0.9). Fully
+               removable using the instructions in its own Info.txt.
+
+  B            No-CD patch. Starts fine, but the repack author and the
+               MyAbandonware page both warn it stops zookeepers cleaning
+               exhibits and maintenance workers repairing fences. The
+               original is kept as zoo.exe.original, so you can switch
+               back at any time.
+
+  C            Keep the original files. Gameplay intact, correct choice
+               on an older macOS - but on macOS 26/27 the game will keep
+               asking for the CD-ROM.
+
+We do not bundle the Custom Patch: it ships a copy of one of the game's
+own files, so the installer rebuilds that part locally instead.
 
 
 ------------------------------------------------------------------------
