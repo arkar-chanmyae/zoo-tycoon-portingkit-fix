@@ -2,6 +2,9 @@
 # ============================================================================
 #  Zoo Tycoon (Complete Collection) - repair + launch  -  macOS / Apple Silicon
 #
+#  METHOD B - the Porting Kit route. Use "0 - Install from Mac Version.command"
+#  (Method A) instead if you can: it needs no disc and is far simpler.
+#
 #  Applies the fixes for four known Porting Kit 7.0.2 packaging bugs.
 #  Safe to run as many times as you like: every step checks first.
 #
@@ -24,7 +27,7 @@ todo() { printf '  [todo]  %s\n' "$*"; }
 hr()   { printf '%s\n' "------------------------------------------------------------------"; }
 
 say ""
-say "Zoo Tycoon repair tool"
+say "Zoo Tycoon repair tool  -  METHOD B (Porting Kit)"
 hr
 if [ "$CHECK_ONLY" = 1 ]; then
   say "MODE: check only - nothing will be changed and the game will not start."
@@ -32,6 +35,30 @@ else
   say "MODE: apply fixes and play"
 fi
 say ""
+
+# If the simpler method is already installed and patched, say so plainly rather
+# than letting someone redo the harder route on top of a working game.
+MAW="/Applications/Zoo Tycoon - Complete Collection/.Zoo Tycoon.app"
+MAG="$MAW/Contents/Resources/drive_c/Program Files/Microsoft Games/Zoo Tycoon"
+if [ -d "$MAW" ] && { [ -f "$MAG/custompatch.ini" ] || [ -f "$MAG/zoo.exe.nocd" ]; }; then
+  say "NOTE: the Mac version install (Method A) is already set up and patched."
+  say "      That install needs no disc at all."
+  say ""
+  say "      To play it, just double-click \"Zoo Tycoon\" on your Desktop -"
+  say "      you do not need to run anything."
+  say ""
+  say "      This script is the Porting Kit route (Method B), and is only"
+  say "      needed if you specifically want that install instead."
+  say ""
+  if [ "$CHECK_ONLY" = 0 ]; then
+    printf '  Continue with the Porting Kit fixes anyway? (y/n) [n]: '
+    read -r go
+    case "$go" in
+      y|Y) ;;
+      *) say ""; say "Nothing changed - enjoy the game."; say ""; exit 0 ;;
+    esac
+  fi
+fi
 
 # ---------------------------------------------------------------- 0. rosetta
 hr

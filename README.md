@@ -121,8 +121,8 @@ Use only if Method A fails.
 ├── README.md                                  # This file
 ├── Zoo Tycoon Kit/
 │   ├── START HERE.txt                         # Plain-English user guide (Method A + B)
-│   ├── 0 - Install from Mac Version.command   # NEW: Automated Mac version + No-CD installer
-│   ├── 1 - Check My Mac.command               # Validates Mac readiness (Method B)
+│   ├── 0 - Install from Mac Version.command   # Automated Mac version installer (A Custom Patch / B No-CD / C original)
+│   ├── 1 - Check My Mac.command               # status checker for both methods (changes nothing)
 │   ├── 2 - Fix and Play.command               # Applies 4 fixes + launches (Method B)
 │   └── Zoo-Tycoon-Complete-Collection_NoCD_Win_EN.zip  # No-CD patch (included)
 ```
