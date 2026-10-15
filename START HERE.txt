@@ -1,152 +1,119 @@
 ========================================================================
- ZOO TYCOON - COMPLETE COLLECTION  on a Mac
+ ZOO TYCOON - COMPLETE COLLECTION  on a Mac (EASY INSTALLER)
 ========================================================================
 
 This kit installs and fixes Zoo Tycoon on your MacBook. It is made for an
 Apple Silicon Mac (M1/M2/M3/M4). Everything here is free.
 
-You will do 2 things by hand (steps 2 and 4) and 2 things by double-click
-(steps 5 and 6). Budget about 30-45 minutes, mostly waiting for downloads.
+There are now TWO ways to install:
 
-Do the steps in order. Don't skip step 6 - without it the game will open,
-show a loading bar, and close by itself.
+  METHOD A (RECOMMENDED): Use the Mac version + No-CD patch (fully automated)
+  METHOD B (PORTING KIT): Original Porting Kit method from before
+
+We recommend METHOD A because it's simpler, doesn't need Porting Kit,
+and the No-CD patch means you don't need to mount an ISO every time.
 
 
 ------------------------------------------------------------------------
- STEP 1 - Check the Mac first (1 minute)
+ METHOD A - Automated Install from Mac Version (15 minutes)
 ------------------------------------------------------------------------
 
-Double-click:   1 - Check My Mac.command
+DO THIS ONCE:
+
+Double-click:   0 - Install from Mac Version.command
 
 If macOS says it "cannot be opened because the developer cannot be
 verified", right-click the file and choose "Open", then click "Open"
 again. You only need to do that once per file.
 
-If a double-click does nothing, or Terminal complains about
-"permission denied", open Terminal (Applications > Utilities), type the
-word  chmod  then a space, then drag this whole "Zoo Tycoon Kit" folder
-into the Terminal window, and press Return. Try the double-click again.
+The script will:
+  1. Try to auto-download the Mac version from MyAbandonware
+     (if blocked, it will tell you to download manually)
+  2. Extract the hidden ".Zoo Tycoon.app" (the real game wrapper)
+  3. Move it to /Applications as "Zoo Tycoon.app"
+  4. Clear the quarantine/extended attributes (xattr -cr)
+  5. Inject the No-CD zoo.exe patch (from the included zip file)
+  6. Bundle MARINE.ISO inside the app
+  7. Create a "Play Zoo Tycoon.command" on your Desktop
 
-Do what the window tells you. If it says Rosetta 2 is missing, copy the
-command it shows into Terminal (Terminal opens from
-Applications > Utilities) and let it finish.
-
-
-------------------------------------------------------------------------
- STEP 2 - Install Porting Kit (10 minutes)
-------------------------------------------------------------------------
-
-Porting Kit is the free program that runs Windows games on a Mac.
-
-  Download page:  https://paulthetall.itch.io/porting-kit
-
-Click "Download Now", then "No thanks, just take me to the downloads",
-then download:
-
-     Porting.Kit-7.0.2-Apple Silicon.dmg
-
-Open the .dmg and drag Porting Kit into Applications. Then open it.
-The first time it runs it shows a short setup - click through it.
+After it finishes, you'll have a working game on your Desktop.
+Double-click "Play Zoo Tycoon.command" to play!
 
 
 ------------------------------------------------------------------------
- STEP 3 - Install the Zoo Tycoon port (10 minutes)
+ METHOD B - Porting Kit Method (Original)
 ------------------------------------------------------------------------
 
-Inside Porting Kit:
+Use this ONLY if Method A fails for some reason.
 
-  1. Click "Games" (left sidebar) -> "All games"
-  2. Type "Zoo Tycoon" in the search box at the top right
-  3. Click the Zoo Tycoon Complete Collection result and install it
-  4. Let it finish - it downloads roughly 2 GB and creates the game
+  STEP 1 - Check the Mac first (1 minute)
+    Double-click:   1 - Check My Mac.command
 
-When it is done, Porting Kit will have made a "Zoo Tycoon" app. Don't
-launch it yet - it will not work until step 6.
+  STEP 2 - Install Porting Kit (10 minutes)
+    https://paulthetall.itch.io/porting-kit
+    Download "Porting.Kit-7.0.2-Apple Silicon.dmg", drag to Applications.
 
+  STEP 3 - Install the Zoo Tycoon port (10 minutes)
+    Inside Porting Kit: Games -> All games -> Search "Zoo Tycoon" -> Install
 
-------------------------------------------------------------------------
- STEP 4 - Get the game disc image (10 minutes)
-------------------------------------------------------------------------
+  STEP 4 - Get the game disc image (10 minutes)
+    https://www.myabandonware.com/game/zoo-tycoon-complete-collection-dzx
+    Download Windows version -> ISO -> unzip -> keep ZOO_TYCN.iso in Downloads
 
-The game looks for its disc, so it needs a disc image file.
+  STEP 5 - Check again (1 minute)
+    Double-click:   1 - Check My Mac.command
 
-  https://www.myabandonware.com/game/zoo-tycoon-complete-collection-dzx
-
-On that page choose the  "Windows"  version, and download the ISO version
-(the file is a .zip around 600 MB). Unzip it. You want the file called:
-
-     ZOO_TYCN.iso
-
-Leave ZOO_TYCN.iso somewhere easy, like your Downloads folder.
-
-
-------------------------------------------------------------------------
- STEP 5 - Check again (1 minute)
-------------------------------------------------------------------------
-
-Double-click:   1 - Check My Mac.command
-
-Now everything should say [ok]. If anything still says [warn], fix that
-first.
-
-
-------------------------------------------------------------------------
- STEP 6 - Fix it and play (2 minutes)
-------------------------------------------------------------------------
-
-Double-click:   2 - Fix and Play.command
-
-This repairs four known bugs in Porting Kit's Zoo Tycoon setup (they are
-the same on every Mac, so this file was written to fix them all), mounts
-the disc, and starts the game.
-
-The first start is slow - give it about 30 seconds. You should reach the
-Zoo Tycoon main menu.
+  STEP 6 - Fix it and play (2 minutes)
+    Double-click:   2 - Fix and Play.command
 
 
 ------------------------------------------------------------------------
  PLAYING IT AGAIN LATER
 ------------------------------------------------------------------------
 
-Always use "2 - Fix and Play.command". It is safe to run every time.
+METHOD A: Always use "Play Zoo Tycoon.command" on your Desktop.
 
-If the Mac has been restarted, the game needs the disc mounted again -
-that script does it for you. Starting the game the other way (double-
-clicking the game app directly) will make it open and immediately close
-if the disc is not mounted.
+METHOD B: Always use "2 - Fix and Play.command" from this folder.
+          It mounts the disc and starts the game.
 
 
 ------------------------------------------------------------------------
  IF SOMETHING GOES WRONG
 ------------------------------------------------------------------------
 
-Re-run "2 - Fix and Play.command" and send the whole text of its window
+Re-run the relevant script and send the whole text of its window
 to the person who gave you this kit. Every step is labelled [ok],
-[FIXED], [warn] or [FAIL], so the output tells us exactly where it
+[DONE], [warn] or [FAIL], so the output tells us exactly where it
 stopped.
 
-The most common problem is a missing disc image: the game opens, shows a
-loading bar, and closes. That means step 4 was not done, or the file is
-not named ZOO_TYCN.iso.
+Most common issues:
+- "App is damaged": Run the installer again, it clears quarantine.
+- "Please insert CD-ROM": The No-CD patch should fix this. If not,
+  make sure MARINE.ISO is inside the app's Contents/Resources folder.
+- Gatekeeper blocks the .command file: Right-click -> Open -> Open.
 
 
 ------------------------------------------------------------------------
  WHAT THE FIXES ACTUALLY ARE (for the curious / for a helper)
 ------------------------------------------------------------------------
 
-1. Porting Kit installs "cnc-ddraw" as the DirectDraw driver. It has no
-   DllGetClassObject export, so any game that requests DirectDraw through
-   COM fails instantly. Replaced with Wine's own builtin ddraw.
+METHOD A (Mac version wrapper):
+  - The downloaded Mac version is a Wineskin wrapper with a hidden ".app"
+  - xattr -cr removes Apple's quarantine that breaks Wine
+  - No-CD zoo.exe bypasses the CD check entirely
+  - MARINE.ISO bundled inside for any secondary checks
 
-2. Porting Kit's engine ships without LC_RPATH entries, so Wine cannot
-   load its own libinotify or the libMoltenVK graphics backend. A cold
-   start dies before the game starts. Fixed with install_name_tool.
-
-3. The game demands an 800x600 fullscreen mode, which Retina displays do
-   not offer. zoo.ini is set to run windowed at 1024x768 instead.
-
-4. A leftover "gdi" DirectDraw renderer setting blocks the Direct3D the
-   game needs, so it is removed.
+METHOD B (Porting Kit port - 4 bugs fixed):
+  1. Porting Kit installs "cnc-ddraw" as the DirectDraw driver. It has no
+     DllGetClassObject export, so any game that requests DirectDraw through
+     COM fails instantly. Replaced with Wine's own builtin ddraw.
+  2. Porting Kit's engine ships without LC_RPATH entries, so Wine cannot
+     load its own libinotify or the libMoltenVK graphics backend. A cold
+     start dies before the game starts. Fixed with install_name_tool.
+  3. The game demands an 800x600 fullscreen mode, which Retina displays do
+     not offer. zoo.ini is set to run windowed at 1024x768 instead.
+  4. A leftover "gdi" DirectDraw renderer setting blocks the Direct3D the
+     game needs, so it is removed.
 
 Nothing outside the game app is touched: no system files, no admin
 password, no permanent background processes.
