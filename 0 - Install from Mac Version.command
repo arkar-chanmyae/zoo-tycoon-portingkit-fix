@@ -1,12 +1,19 @@
 #!/bin/bash
 # ============================================================================
-#  Zoo Tycoon Complete Collection - AUTOMATED INSTALLER (from Mac version)
-#  Downloads the Mac version from MyAbandonware, extracts hidden .app, applies
-#  No-CD patch, clears quarantine, bundles MARINE.ISO, creates launch shortcut.
-#  Run this ONCE. After that, use "2 - Fix and Play.command" to launch.
+#  Zoo Tycoon Complete Collection - EASY INSTALLER  (Mac version / ZT-CE.dmg)
+#
+#  Installs the Mac repack "Zoo-Tycoon-Complete-Collection_Mac_EN_Repack.zip",
+#  which contains a single "ZT-CE.dmg". That image holds a hidden
+#  ".Zoo Tycoon.app" (the real Wineskin wrapper) plus a small "Zoo Tycoon.app"
+#  helper that mounts the bundled fake MARINE image and launches the game.
+#
+#  This script: extracts the dmg, copies the game folder to /Applications,
+#  clears macOS quarantine, and optionally applies the No-CD patch.
+#
+#  Run ONCE. Afterwards use "Play Zoo Tycoon.command" on your Desktop.
 # ============================================================================
 
-set -euo pipefail
+set -uo pipefail
 
 say()  { printf '\n%s\n' "$*"; }
 ok()   { printf '  [ok]    %s\n' "$*"; }
@@ -15,180 +22,240 @@ warn() { printf '  [warn]  %s\n' "$*"; }
 bad()  { printf '  [FAIL]  %s\n' "$*"; }
 hr()   { printf '%s\n' "------------------------------------------------------------------"; }
 
-# ------------ Config ------------
-MAC_DL_URL="https://www.myabandonware.com/game/zoo-tycoon-complete-collection-dzx"
-MAC_DL_HINT="Mac version ZIP (~1.3 GB) from MyAbandonware"
-NOCd_ZIP="$HOME/Desktop/Zoo Tycoon Kit/Zoo-Tycoon-Complete-Collection_NoCD_Win_EN.zip"
-DEST_ROOT="/Applications"
-APP_NAME="Zoo Tycoon"
-FINAL_APP="$DEST_ROOT/$APP_NAME.app"
-# Use a simple, visible working folder on Desktop (easy to find/clean up)
+# ---------------------------------------------------------------- config ---
+REPACK_NAME="Zoo-Tycoon-Complete-Collection_Mac_EN_Repack.zip"
+NOCD_ZIP="$HOME/Desktop/Zoo Tycoon Kit/Zoo-Tycoon-Complete-Collection_NoCD_Win_EN.zip"
+DEST="/Applications/Zoo Tycoon - Complete Collection"
 WORK_DIR="$HOME/Desktop/Zoo Tycoon Kit/temp_install"
-mkdir -p "$WORK_DIR"
+MAC_DL_URL="https://www.myabandonware.com/game/zoo-tycoon-complete-collection-dzx"
 
-trap 'rm -rf "$WORK_DIR"' EXIT
-
+# ---------------------------------------------------------------- banner ---
 hr
-say "Zoo Tycoon Complete Collection - Automated Installer (Mac version + No-CD)"
+say "Zoo Tycoon Complete Collection - Easy Installer"
 hr
+printf '  Installs the Mac version to:\n    %s\n' "$DEST"
+printf '  Needs about 3 GB of free disk space.\n'
 
-# ------------ 0. Prereqs ------------
-say "0. Checking prerequisites..."
-command -v curl >/dev/null || { bad "curl not found"; exit 1; }
-command -v unzip >/dev/null || { bad "unzip not found"; exit 1; }
-command -v xattr >/dev/null || { bad "xattr not found"; exit 1; }
-command -v hdiutil >/dev/null || { bad "hdiutil not found"; exit 1; }
-ok "System tools present"
-
-if [ ! -f "$NOCd_ZIP" ]; then
-  bad "No-CD patch zip not found at: $NOCd_ZIP"
-  say "Place the No-CD zip there, or edit this script to point to it."
+FREE_GB=$(df -g /System/Volumes/Data 2>/dev/null | awk 'NR==2{print $4}')
+if [ -n "${FREE_GB:-}" ] && [ "$FREE_GB" -lt 3 ] 2>/dev/null; then
+  bad "Only ${FREE_GB} GB free - need about 3 GB."
+  printf '  Free some space, then run this again.\n\n'
+  read -n 1 -s -r -p "Press any key to close..."
   exit 1
 fi
-ok "No-CD patch zip found"
+[ -n "${FREE_GB:-}" ] && ok "${FREE_GB} GB free"
 
-# ------------ 1. Download Mac version ------------
-say "1. Downloading Mac version from MyAbandonware..."
-MAC_ZIP="$WORK_DIR/ZooTycoon_Mac.zip"
+# --------------------------------------------------------------- 0. tools --
+say "0. Checking tools"
+MISSING=""
+for t in unzip hdiutil ditto xattr; do
+  command -v "$t" >/dev/null 2>&1 || MISSING="$MISSING $t"
+done
+if [ -n "$MISSING" ]; then bad "Missing:$MISSING"; exit 1; fi
+ok "unzip, hdiutil, ditto, xattr all present"
 
-# MyAbandonware requires a referrer and User-Agent to serve the actual file.
-# We'll try a direct link pattern; if it fails, we fall back to manual instruction.
-DL_LINK="https://www.myabandonware.com/redirect.php?url=https%3A%2F%2Farchive.org%2Fdownload%2Fzoo-tycoon-complete-collection%2FZoo%2520Tycoon%2520Complete%2520Collection.zip"
-# The above is a best-effort guess; archive.org often hosts these.
-# If auto-download fails, we will instruct manual download.
+# ------------------------------------------------------- 1. find the zip ---
+say "1. Looking for the Mac version"
+ZIP=""
+for cand in "$HOME/Desktop/Zoo Tycoon Kit/$REPACK_NAME" \
+            "$HOME/Downloads/$REPACK_NAME"; do
+  [ -f "$cand" ] && { ZIP="$cand"; break; }
+done
+if [ -z "$ZIP" ]; then
+  for pat in "$HOME/Downloads"/*Zoo*Tycoon*Mac*.zip \
+             "$HOME/Downloads"/*Zoo*Tycoon*Repack*.zip \
+             "$HOME/Desktop"/*Zoo*Tycoon*Mac*.zip; do
+    [ -f "$pat" ] && { ZIP="$pat"; break; }
+  done
+fi
 
-say "   Trying direct download..."
-if curl -L -A "Mozilla/5.0" -H "Referer: $MAC_DL_URL" -o "$MAC_ZIP" "$DL_LINK" 2>/dev/null; then
-  if [ -f "$MAC_ZIP" ] && [ $(stat -f%z "$MAC_ZIP" 2>/dev/null || stat -c%s "$MAC_ZIP") -gt 100000000 ]; then
-    ok "Download succeeded ($(du -h "$MAC_ZIP" | awk '{print $1}'))"
+if [ -z "$ZIP" ]; then
+  warn "Not found. This one part is a manual download:"
+  printf '\n'
+  printf '    1. Open: %s\n' "$MAC_DL_URL"
+  printf '    2. Choose the  Mac  version and download it\n'
+  printf '    3. Keep it in Downloads, named:\n'
+  printf '         %s\n' "$REPACK_NAME"
+  printf '    4. Run this installer again.\n\n'
+  printf '  Press ENTER to open that page now, or Ctrl-C to quit... '
+  read -r
+  open "$MAC_DL_URL"
+  exit 0
+fi
+ok "found: $ZIP"
+ZIP_SIZE=$(stat -f%z "$ZIP" 2>/dev/null || echo 0)
+if [ "$ZIP_SIZE" -lt 100000000 ]; then
+  warn "that file is only $((ZIP_SIZE/1048576)) MB - possibly incomplete or the wrong one"
+  printf '  Continue anyway? (y/n): '
+  read -r ans
+  case "$ans" in y|Y) ;; *) exit 1;; esac
+fi
+ok "archive size: $((ZIP_SIZE/1048576)) MB"
+
+# ---------------------------------------------------- 2. prepare work dir --
+say "2. Preparing working folder"
+[ -e "$WORK_DIR" ] && { warn "removing an old temp_install folder"; rm -rf "$WORK_DIR"; }
+mkdir -p "$WORK_DIR"
+cleanup() {
+  [ -d "$WORK_DIR/vol" ] && hdiutil detach "$WORK_DIR/vol" >/dev/null 2>&1
+  rm -rf "$WORK_DIR"
+}
+trap cleanup EXIT
+ok "$WORK_DIR"
+
+# -------------------------------------------------------- 3. get the dmg --
+say "3. Extracting the disk image"
+# Only pull the .dmg out - the archive is 1.2 GB and holds just this one file.
+DMG_ENTRY=$(unzip -Z1 "$ZIP" 2>/dev/null | grep -i '\.dmg$' | head -1)
+[ -n "$DMG_ENTRY" ] || { bad "No .dmg inside the archive - is this the Mac version?"; exit 1; }
+unzip -o -q "$ZIP" "$DMG_ENTRY" -d "$WORK_DIR" 2>/dev/null
+DMG=$(find "$WORK_DIR" -maxdepth 3 -iname "*.dmg" 2>/dev/null | head -1)
+[ -n "$DMG" ] || { bad "Could not extract the disk image"; exit 1; }
+ok "disk image: $(basename "$DMG") ($(( $(stat -f%z "$DMG") / 1048576 )) MB)"
+
+# ------------------------------------------------------------ 4. mount -----
+say "4. Mounting the disk image"
+if ! hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$WORK_DIR/vol" >/dev/null 2>&1; then
+  bad "Could not mount the disk image."
+  printf '  If it is already mounted, eject it in Finder and retry.\n'
+  exit 1
+fi
+ok "mounted read-only"
+
+SRC_APP=$(find "$WORK_DIR/vol" -maxdepth 2 -name ".Zoo Tycoon.app" -type d 2>/dev/null | head -1)
+if [ -z "$SRC_APP" ]; then
+  bad "The hidden '.Zoo Tycoon.app' wrapper was not found."
+  printf '  What the image contains:\n'
+  find "$WORK_DIR/vol" -maxdepth 2 2>/dev/null | head -10 | sed 's/^/    /'
+  exit 1
+fi
+SRC_FOLDER=$(dirname "$SRC_APP")
+ok "wrapper found inside: $(basename "$SRC_FOLDER")"
+
+# ------------------------------------------------------------ 5. install ---
+say "5. Installing to /Applications"
+if [ -e "$DEST" ]; then
+  warn "an existing install was found - replacing it"
+  rm -rf "$DEST"
+fi
+# ditto preserves the symlinks inside the wrapper (drive_c, Logs) and metadata.
+if ! ditto "$SRC_FOLDER" "$DEST" 2>/dev/null; then
+  bad "Copy failed - do you have permission to write to /Applications?"
+  exit 1
+fi
+ok "copied to $DEST"
+hdiutil detach "$WORK_DIR/vol" >/dev/null 2>&1
+ok "disk image ejected"
+
+# --------------------------------------------------- 6. clear quarantine ----
+say "6. Clearing macOS quarantine (xattr -cr)"
+# This is the step that cures "Zoo Tycoon is damaged and cannot be opened".
+xattr -cr "$DEST" 2>/dev/null
+find "$DEST" -name '._*' -delete 2>/dev/null
+ok "quarantine cleared"
+
+WRAPPER="$DEST/.Zoo Tycoon.app"
+GAMEDIR="$WRAPPER/Contents/Resources/drive_c/Program Files/Microsoft Games/Zoo Tycoon"
+[ -d "$GAMEDIR" ] || GAMEDIR="$WRAPPER/Contents/Resources/drive_c/Program Files (x86)/Microsoft Games/Zoo Tycoon"
+if [ -d "$GAMEDIR" ]; then
+  ok "game folder verified"
+else
+  warn "game folder not where expected"
+  GAMEDIR=""
+fi
+
+# ------------------------------------------------------- 7. disc handling --
+say "7. The disc check - choose one"
+printf '  A) Apply the No-CD patch          (NEEDED on current macOS)\n'
+printf '     The game starts with no disc step at all.\n'
+printf '     Trade-off, documented by the repack author and the MyAbandonware\n'
+printf '     page: the crack also disables staff upkeep - zookeepers stop\n'
+printf '     cleaning exhibits and maintenance workers stop repairing fences.\n'
+printf '     The original is kept as zoo.exe.original, so this is reversible.\n\n'
+printf '  B) Keep the original game files\n'
+printf '     Gameplay fully intact, and the repack mounts a small fake "MARINE"\n'
+printf '     image for the disc check. BUT this is verified NOT to work on\n'
+printf '     macOS 26/27: the OS reports a mounted disk image as generic media\n'
+printf '     rather than a CD, so Wine still fails the check and the game keeps\n'
+printf '     asking for the CD-ROM. Only choose this on an older macOS.\n\n'
+printf '  Type A or B, then press Return [A]: '
+read -r choice
+choice=$(printf '%s' "${choice:-A}" | tr '[:lower:]' '[:upper:]')
+
+if [ "$choice" != "B" ]; then
+  if [ ! -f "$NOCD_ZIP" ]; then
+    warn "No-CD zip not found at $NOCD_ZIP - keeping the original files"
+  elif [ -z "$GAMEDIR" ]; then
+    warn "game folder not found - keeping the original files"
   else
-    warn "Download too small or failed - will need manual download"
-    rm -f "$MAC_ZIP"
+    TMPX="$WORK_DIR/nocd"; mkdir -p "$TMPX"
+    unzip -o -q "$NOCD_ZIP" -d "$TMPX" 2>/dev/null
+    PATCHED=$(find "$TMPX" -iname "zoo.exe" 2>/dev/null | head -1)
+    if [ -n "$PATCHED" ] && [ -f "$GAMEDIR/zoo.exe" ]; then
+      cp "$GAMEDIR/zoo.exe" "$GAMEDIR/zoo.exe.original" 2>/dev/null
+      cp "$PATCHED" "$GAMEDIR/zoo.exe"
+      did "No-CD patch applied"
+      warn "original kept as zoo.exe.original - rename it back over zoo.exe"
+      warn "to restore normal zookeeper behaviour"
+    else
+      bad "could not apply the patch - keeping the original files"
+    fi
   fi
 else
-  warn "Auto-download failed (site blocks bots) - will need manual download"
+  ok "keeping the original game files - use this only on older macOS"
 fi
 
-if [ ! -f "$MAC_ZIP" ]; then
-  say ""
-  say "*** MANUAL STEP REQUIRED ***"
-  say "Auto-download was blocked by MyAbandonware. Please:"
-  say "  1. Open this URL in Safari: $MAC_DL_URL"
-  say "  2. Click 'Download' -> Choose 'Mac' version -> Save to Downloads"
-  say "  3. The file is usually named 'Zoo Tycoon Complete Collection.zip' (~1.3 GB)"
-  say "  4. When done, move it to: $WORK_DIR/ZooTycoon_Mac.zip"
-  say "     (or just leave it in Downloads - the script will find it there)"
-  say "  5. Then press ENTER here to continue..."
-  read -r
-  # Try common download locations
-  for cand in "$HOME/Downloads/Zoo Tycoon Complete Collection.zip" \
-              "$HOME/Downloads/Zoo Tycoon Complete Collection (Mac).zip" \
-              "$HOME/Downloads/zoo-tycoon-complete-collection.zip"; do
-    if [ -f "$cand" ]; then
-      cp "$cand" "$MAC_ZIP"
-      ok "Found manual download: $cand"
-      break
-    fi
-  done
-  [ -f "$MAC_ZIP" ] || { bad "Still no Mac zip found at $MAC_ZIP"; exit 1; }
-fi
-
-# ------------ 2. Extract and find hidden .app ------------
-say "2. Extracting Mac version..."
-unzip -q "$MAC_ZIP" -d "$WORK_DIR/mac_extract" 2>/dev/null || { bad "unzip failed"; exit 1; }
-
-# Find the hidden .Zoo Tycoon.app (the actual Wineskin wrapper)
-HIDDEN_APP=$(find "$WORK_DIR/mac_extract" -name ".Zoo Tycoon.app" -o -name "Zoo Tycoon.app" 2>/dev/null | head -1)
-[ -n "$HIDDEN_APP" ] || { bad "Could not find .Zoo Tycoon.app in extracted files"; exit 1; }
-ok "Found wrapper: $(basename "$HIDDEN_APP")"
-
-# ------------ 3. Move to Applications, rename, clear quarantine ------------
-say "3. Installing to Applications..."
-
-# Remove any existing install
-[ -d "$FINAL_APP" ] && { say "   Removing old install..."; rm -rf "$FINAL_APP"; }
-
-# Move the hidden app to Applications as "Zoo Tycoon.app"
-mv "$HIDDEN_APP" "$FINAL_APP"
-ok "Moved to $FINAL_APP"
-
-# Clear quarantine / extended attributes (the critical step)
-say "   Clearing quarantine attributes (xattr -cr)..."
-xattr -cr "$FINAL_APP" 2>/dev/null || warn "xattr had warnings (usually harmless)"
-ok "Quarantine cleared"
-
-# ------------ 4. Inject No-CD zoo.exe ------------
-say "4. Applying No-CD patch..."
-
-NOCd_EXE="$WORK_DIR/patched_zoo.exe"
-unzip -q -o "$NOCd_ZIP" -d "$WORK_DIR/nocd" 2>/dev/null
-PATCHED_EXE=$(find "$WORK_DIR/nocd" -name "zoo.exe" -o -name "Zoo.exe" 2>/dev/null | head -1)
-[ -f "$PATCHED_EXE" ] || { bad "No zoo.exe found in No-CD zip"; exit 1; }
-
-# Target game directory inside the wrapper
-GAME_DIR="$FINAL_APP/Contents/Resources/drive_c/Program Files/Microsoft Games/Zoo Tycoon"
-[ -d "$GAME_DIR" ] || GAME_DIR="$FINAL_APP/Contents/Resources/drive_c/Program Files (x86)/Microsoft Games/Zoo Tycoon"
-[ -d "$GAME_DIR" ] || { bad "Game directory not found in wrapper at expected paths"; exit 1; }
-
-# Backup original
-[ -f "$GAME_DIR/zoo.exe" ] && mv "$GAME_DIR/zoo.exe" "$GAME_DIR/zoo.exe.bak" && ok "Backed up original zoo.exe"
-cp "$PATCHED_EXE" "$GAME_DIR/zoo.exe"
-ok "No-CD zoo.exe installed"
-
-# ------------ 5. Bundle MARINE.ISO ------------
-say "5. Bundling MARINE.ISO..."
-
-# Find MARINE.ISO inside the extracted Mac version (it's usually in the wrapper's Resources)
-MARINE_ISO=$(find "$WORK_DIR/mac_extract" -iname "MARINE.ISO" -o -iname "marine.iso" 2>/dev/null | head -1)
-if [ -f "$MARINE_ISO" ]; then
-  TARGET_ISO="$FINAL_APP/Contents/Resources/MARINE.ISO"
-  cp "$MARINE_ISO" "$TARGET_ISO"
-  ok "MARINE.ISO bundled at $TARGET_ISO"
-else
-  warn "MARINE.ISO not found in Mac download - you may need to mount it manually later"
-  say "   (The No-CD patch should make this optional, but some versions still check for it)"
-fi
-
-# ------------ 6. Create Launch Script (double-click to play) ------------
-say "6. Creating launch shortcut on Desktop..."
-
+# ------------------------------------------------- 8. Desktop launcher -----
+say "8. Creating the Desktop launcher"
 LAUNCHER="$HOME/Desktop/Play Zoo Tycoon.command"
 cat > "$LAUNCHER" <<'LAUNCHEOF'
 #!/bin/bash
-# Auto-generated launcher - double-click to play
-APP="/Applications/Zoo Tycoon.app"
-ISO="/Applications/Zoo Tycoon.app/Contents/Resources/MARINE.ISO"
+# Zoo Tycoon launcher - double-click to play.
+DEST="/Applications/Zoo Tycoon - Complete Collection"
+WRAPPER="$DEST/.Zoo Tycoon.app"
+HELPER="$DEST/Zoo Tycoon.app"
 
-# Mount MARINE.ISO if present and not already mounted
-if [ -f "$ISO" ] && [ ! -d "/Volumes/MARINE" ]; then
-  echo "Mounting MARINE.ISO..."
-  hdiutil attach "$ISO" -nobrowse -quiet 2>/dev/null
-  sleep 2
+if [ ! -d "$WRAPPER" ]; then
+  echo "Zoo Tycoon is not installed at:"
+  echo "  $DEST"
+  echo "Run '0 - Install from Mac Version.command' first."
+  echo
+  read -n 1 -s -r -p "Press any key to close..."
+  exit 1
 fi
 
-echo "Launching Zoo Tycoon..."
-open "$APP"
+echo "Starting Zoo Tycoon... (first start can take 30 seconds)"
 
-# Keep terminal open for a moment to show any errors
-sleep 3
+# Use the repack's own helper: it mounts the fake MARINE image, opens the
+# wrapper, then ejects the image after 20 seconds. Works whether or not the
+# No-CD patch was applied.
+if [ -d "$HELPER" ]; then
+  open "$HELPER"
+else
+  ISO="$WRAPPER/MARINE.iso"
+  if [ -f "$ISO" ] && [ ! -d /Volumes/MARINE ]; then
+    hdiutil mount "$ISO" >/dev/null 2>&1
+  fi
+  open "$WRAPPER"
+fi
+
+echo "Done - this window closes in 5 seconds."
+sleep 5
 LAUNCHEOF
 
 chmod +x "$LAUNCHER"
-ok "Launcher created: ~/Desktop/Play Zoo Tycoon.command"
+ok "created: ~/Desktop/Play Zoo Tycoon.command"
 
-# ------------ 7. Done ------------
+# ------------------------------------------------------------- 9. done -----
 hr
-say "INSTALLATION COMPLETE!"
+say "INSTALLATION COMPLETE"
 hr
-say ""
-say "Next steps:"
-say "  1. Double-click: ~/Desktop/Play Zoo Tycoon.command"
-say "     (First run: right-click -> Open -> Open to bypass Gatekeeper)"
-say "  2. The game should launch without asking for a CD."
-say ""
-say "If you ever need to re-apply fixes (display mode, etc.), run:"
-say "  ~/Desktop/Zoo Tycoon Kit/2 - Fix and Play.command"
-say ""
+printf '  Play:       double-click "Play Zoo Tycoon.command" on your Desktop\n'
+printf '  First run:  right-click that file -> Open -> Open (Gatekeeper)\n'
+printf '  Installed:  %s\n' "$DEST"
+printf '  Too small?  run "Change Resolution.command" in that folder\n'
+printf '              (the game starts windowed at 800x600)\n'
 hr
-read -n 1 -s -r -p "Press any key to close..."
-say ""
+printf '\nPress any key to close this window... '
+read -n 1 -s -r
+printf '\n'

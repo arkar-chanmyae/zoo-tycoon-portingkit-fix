@@ -26,18 +26,46 @@ If macOS says it "cannot be opened because the developer cannot be
 verified", right-click the file and choose "Open", then click "Open"
 again. You only need to do that once per file.
 
-The script will:
-  1. Try to auto-download the Mac version from MyAbandonware
-     (if blocked, it will tell you to download manually)
-  2. Extract the hidden ".Zoo Tycoon.app" (the real game wrapper)
-  3. Move it to /Applications as "Zoo Tycoon.app"
-  4. Clear the quarantine/extended attributes (xattr -cr)
-  5. Inject the No-CD zoo.exe patch (from the included zip file)
-  6. Bundle MARINE.ISO inside the app
-  7. Create a "Play Zoo Tycoon.command" on your Desktop
+You need the Mac version archive first. This is the one manual download:
 
-After it finishes, you'll have a working game on your Desktop.
-Double-click "Play Zoo Tycoon.command" to play!
+  https://www.myabandonware.com/game/zoo-tycoon-complete-collection-dzx
+
+Choose the "Mac" version and save this file to your Downloads folder:
+
+     Zoo-Tycoon-Complete-Collection_Mac_EN_Repack.zip
+
+The script will then:
+  1. Find that archive (kit folder, or Downloads)
+  2. Extract the disk image ZT-CE.dmg from inside it
+  3. Mount it and copy the game to
+       /Applications/Zoo Tycoon - Complete Collection
+  4. Clear the quarantine attributes (xattr -cr) - this is what fixes
+     "Zoo Tycoon is damaged and cannot be opened"
+  5. Ask you one question about the disc check (see the note below)
+  6. Create a "Play Zoo Tycoon.command" on your Desktop
+
+After it finishes, double-click "Play Zoo Tycoon.command".
+
+
+NOTE - the disc check question, and why it defaults to the No-CD patch:
+
+The Mac repack expects you to keep a fake "MARINE" disc image mounted.
+On macOS 26/27 that no longer works: the OS tells Wine that a mounted
+image is a generic disk, not a CD, so the game still asks for the
+CD-ROM. We verified this on a real machine - it is not a guess.
+
+So the installer offers:
+
+  A (default)  Apply the No-CD patch. The game starts with no disc step.
+               Documented trade-off: the repack author and the
+               MyAbandonware page both warn that the crack also makes
+               zookeepers stop cleaning exhibits and maintenance workers
+               stop repairing fences. The original file is kept as
+               zoo.exe.original, so you can switch back at any time.
+
+  B            Keep the original files. Gameplay fully intact, and this
+               is the right choice on an older macOS - but on macOS
+               26/27 the game will keep asking for the CD-ROM.
 
 
 ------------------------------------------------------------------------
@@ -97,11 +125,16 @@ Most common issues:
  WHAT THE FIXES ACTUALLY ARE (for the curious / for a helper)
 ------------------------------------------------------------------------
 
-METHOD A (Mac version wrapper):
-  - The downloaded Mac version is a Wineskin wrapper with a hidden ".app"
-  - xattr -cr removes Apple's quarantine that breaks Wine
-  - No-CD zoo.exe bypasses the CD check entirely
-  - MARINE.ISO bundled inside for any secondary checks
+METHOD A (Mac version wrapper - verified working):
+  - The Mac repack is a ZIP holding one file: ZT-CE.dmg
+  - Inside that image: a hidden ".Zoo Tycoon.app" (the real Wineskin
+    wrapper, 1.6 GB, engine WS11WineCX21.1.0) plus a small helper app
+    "Zoo Tycoon.app" that mounts a fake MARINE image and launches it
+  - xattr -cr clears the quarantine attribute that makes macOS report
+    "Zoo Tycoon is damaged and cannot be opened"
+  - The disc check cannot be satisfied on macOS 26/27 by a mounted
+    image, so the No-CD zoo.exe is used; the original is preserved as
+    zoo.exe.original so the change is reversible
 
 METHOD B (Porting Kit port - 4 bugs fixed):
   1. Porting Kit installs "cnc-ddraw" as the DirectDraw driver. It has no
